@@ -50,13 +50,10 @@ if command -v apt-get >/dev/null 2>&1; then
         xfslibs-dev
     sudo apt-get install -y "linux-headers-$(uname -r)" || true
 elif command -v dnf >/dev/null 2>&1; then
-    sudo dnf install -y \
-        acl attr automake bc dump e2fsprogs fio gawk gcc git hostname indent \
-        libacl-devel libaio-devel libcap-devel gdbm-devel libtool \
-        liburing-devel lvm2 make psmisc python3 quota quota-devel sed \
-        sqlite xfsprogs xfsprogs-devel fuse3 util-linux-devel uuidd
-    sudo dnf install -y f2fs-tools xfsdump || true
-    sudo dnf install -y dbench exfatprogs ocfs2-tools udftools kernel-headers || true
+    dnf_install=(sudo dnf --setopt=skip_if_unavailable=True install -y)
+    "${dnf_install[@]}" acl attr automake bc dump e2fsprogs fio gawk gcc git hostname indent libacl-devel libaio-devel libcap-devel gdbm-devel libtool liburing-devel lvm2 make psmisc python3 quota quota-devel sed sqlite xfsprogs xfsprogs-devel fuse3 util-linux-devel uuidd
+    "${dnf_install[@]}" f2fs-tools xfsdump || true
+    "${dnf_install[@]}" dbench exfatprogs ocfs2-tools udftools kernel-headers || true
 else
     echo "Unsupported package manager: need apt-get or dnf"
     exit 1
@@ -157,9 +154,19 @@ sudo cp "$current_dir/xfstests_slayer.exclude" /tmp/xfstests-dev/
 
 # run tests.
 cd /tmp/xfstests-dev
-if [[ -n "${XFSTESTS_CASES:-}" ]]; then
+selected_cases=()
+if [[ $# -gt 0 ]]; then
+    selected_cases=("$@")
+elif [[ -n "${XFSTESTS_CASES:-}" ]]; then
     read -r -a selected_cases <<<"${XFSTESTS_CASES}"
-    sudo LC_ALL=C ./check -fuse "${selected_cases[@]}"
-else
-    sudo LC_ALL=C ./check -fuse -E xfstests_slayer.exclude
 fi
+
+check_args=(-fuse)
+if [[ ${#selected_cases[@]} -gt 0 ]]; then
+    check_args+=("${selected_cases[@]}")
+else
+    check_args+=(-E xfstests_slayer.exclude)
+fi
+
+echo "====> Running: ./check ${check_args[*]}"
+sudo LC_ALL=C ./check "${check_args[@]}"

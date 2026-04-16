@@ -204,7 +204,7 @@ where
         let attr = vfs_to_fuse_attr(&vattr, &req);
         // Keep generation at 0 and set TTL to 1s (tunable)
         Ok(ReplyEntry {
-            ttl: Duration::from_secs(1),
+            ttl: Duration::ZERO,
             attr,
             generation: 0,
         })
@@ -287,6 +287,8 @@ where
             out
         };
 
+        let _ = self.update_atime(ino as i64).await;
+
         Ok(ReplyData {
             data: Bytes::from(data),
         })
@@ -354,7 +356,7 @@ where
 
         let attr = vfs_to_fuse_attr(&vattr, &req);
         Ok(ReplyAttr {
-            ttl: Duration::from_secs(1),
+            ttl: Duration::ZERO,
             attr,
         })
     }
@@ -381,7 +383,7 @@ where
             };
             let attr = vfs_to_fuse_attr(&vattr, &req);
             return Ok(ReplyAttr {
-                ttl: Duration::from_secs(1),
+                ttl: Duration::ZERO,
                 attr,
             });
         }
@@ -394,7 +396,7 @@ where
 
         let attr = vfs_to_fuse_attr(&vattr, &req);
         Ok(ReplyAttr {
-            ttl: Duration::from_secs(1),
+            ttl: Duration::ZERO,
             attr,
         })
     }
@@ -482,7 +484,7 @@ where
         _lock_owner: u64,
     ) -> FuseResult<ReplyDirectoryPlus<BoxStream<'a, FuseResult<DirectoryEntryPlus>>>> {
         debug!(unique = req.unique, ino, fh, offset, "fuse.readdirplus");
-        let ttl = Duration::from_secs(1);
+        let ttl = Duration::ZERO;
         let mut all: Vec<DirectoryEntryPlus> = Vec::new();
 
         // Try to use handle first
@@ -674,7 +676,7 @@ where
 
         let attr = vfs_to_fuse_attr(&vattr, &req);
         Ok(ReplyEntry {
-            ttl: Duration::from_secs(1),
+            ttl: Duration::ZERO,
             attr,
             generation: 0,
         })
@@ -728,7 +730,7 @@ where
         };
         let attr = vfs_to_fuse_attr(&vattr, &req);
         Ok(ReplyEntry {
-            ttl: Duration::from_secs(1),
+            ttl: Duration::ZERO,
             attr,
             generation: 0,
         })
@@ -784,7 +786,7 @@ where
             .map_err(Into::<Errno>::into)?;
 
         Ok(ReplyCreated {
-            ttl: Duration::from_secs(1),
+            ttl: Duration::ZERO,
             attr,
             generation: 0,
             fh,
@@ -851,7 +853,7 @@ where
 
         let fuse_attr = vfs_to_fuse_attr(&attr, &req);
         Ok(ReplyEntry {
-            ttl: Duration::from_secs(1),
+            ttl: Duration::ZERO,
             attr: fuse_attr,
             generation: 0,
         })
@@ -908,7 +910,7 @@ where
             .unwrap_or(vattr);
 
         Ok(ReplyEntry {
-            ttl: Duration::from_secs(1),
+            ttl: Duration::ZERO,
             attr: vfs_to_fuse_attr(&attr, &req),
             generation: 0,
         })

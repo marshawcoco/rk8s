@@ -503,7 +503,7 @@ impl DatabaseMetaStore {
             .await
             .map_err(MetaError::Database)?;
 
-        // Update parent directory mtime
+        // Update parent directory mtime/ctime for the new entry
         let mut parent_meta: access_meta::ActiveModel = AccessMeta::find_by_id(parent_inode)
             .one(&txn)
             .await
@@ -511,6 +511,7 @@ impl DatabaseMetaStore {
             .unwrap()
             .into();
         parent_meta.modify_time = Set(now);
+        parent_meta.create_time = Set(now);
         parent_meta
             .update(&txn)
             .await
@@ -603,7 +604,7 @@ impl DatabaseMetaStore {
             .await
             .map_err(MetaError::Database)?;
 
-        // Update parent directory mtime
+        // Update parent directory mtime/ctime for the new entry
         let mut parent_meta: access_meta::ActiveModel = AccessMeta::find_by_id(parent_inode)
             .one(&txn)
             .await
@@ -611,6 +612,7 @@ impl DatabaseMetaStore {
             .unwrap()
             .into();
         parent_meta.modify_time = Set(now);
+        parent_meta.create_time = Set(now);
         parent_meta
             .update(&txn)
             .await
@@ -1370,14 +1372,17 @@ impl MetaStore for DatabaseMetaStore {
             .await
             .map_err(MetaError::Database)?;
 
-        // Update parent directory mtime
+        let now = Self::now_nanos();
+
+        // Update parent directory mtime/ctime for the removed entry
         let mut parent_meta: access_meta::ActiveModel = AccessMeta::find_by_id(parent)
             .one(&txn)
             .await
             .map_err(MetaError::Database)?
             .ok_or(MetaError::ParentNotFound(parent))?
             .into();
-        parent_meta.modify_time = Set(Utc::now().timestamp_nanos_opt().unwrap_or(0));
+        parent_meta.modify_time = Set(now);
+        parent_meta.create_time = Set(now);
         parent_meta
             .update(&txn)
             .await
@@ -1482,14 +1487,15 @@ impl MetaStore for DatabaseMetaStore {
         file_meta.create_time = Set(now);
         file_meta.update(&txn).await.map_err(MetaError::Database)?;
 
-        // Update parent directory mtime
+        // Update parent directory mtime/ctime for the removed entry
         let mut parent_meta: access_meta::ActiveModel = AccessMeta::find_by_id(parent)
             .one(&txn)
             .await
             .map_err(MetaError::Database)?
             .ok_or(MetaError::ParentNotFound(parent))?
             .into();
-        parent_meta.modify_time = Set(Utc::now().timestamp_nanos_opt().unwrap_or(0));
+        parent_meta.modify_time = Set(now);
+        parent_meta.create_time = Set(now);
         parent_meta
             .update(&txn)
             .await
@@ -1659,6 +1665,7 @@ impl MetaStore for DatabaseMetaStore {
 
         let mut parent_active: access_meta::ActiveModel = parent_dir.into();
         parent_active.modify_time = Set(now);
+        parent_active.create_time = Set(now);
         parent_active
             .update(&txn)
             .await
@@ -1737,6 +1744,7 @@ impl MetaStore for DatabaseMetaStore {
 
         let mut parent_active: access_meta::ActiveModel = parent_dir.into();
         parent_active.modify_time = Set(now);
+        parent_active.create_time = Set(now);
         parent_active
             .update(&txn)
             .await
@@ -1894,7 +1902,7 @@ impl MetaStore for DatabaseMetaStore {
         // For directories (nlink >= 2, no FileMeta), no additional updates needed
         // The ContentMeta update above is sufficient
 
-        // Update old parent mtime (not ctime, which should only change on metadata changes)
+        // Update parent directory mtime/ctime for the renamed entry
         let mut old_parent_meta: access_meta::ActiveModel = AccessMeta::find_by_id(old_parent)
             .one(&txn)
             .await
@@ -1902,12 +1910,12 @@ impl MetaStore for DatabaseMetaStore {
             .ok_or(MetaError::ParentNotFound(old_parent))?
             .into();
         old_parent_meta.modify_time = Set(now);
+        old_parent_meta.create_time = Set(now);
         old_parent_meta
             .update(&txn)
             .await
             .map_err(MetaError::Database)?;
 
-        // Update new parent mtime (if different)
         if old_parent != new_parent {
             let mut new_parent_meta: access_meta::ActiveModel = AccessMeta::find_by_id(new_parent)
                 .one(&txn)
@@ -1916,6 +1924,7 @@ impl MetaStore for DatabaseMetaStore {
                 .ok_or(MetaError::NotFound(new_parent))?
                 .into();
             new_parent_meta.modify_time = Set(now);
+            new_parent_meta.create_time = Set(now);
             new_parent_meta
                 .update(&txn)
                 .await
@@ -2078,7 +2087,7 @@ impl MetaStore for DatabaseMetaStore {
                 .map_err(MetaError::Database)?;
         }
 
-        // Update parent directories' mtime
+        // Update parent directories' mtime/ctime for the exchanged entries
         let mut old_parent_meta: access_meta::ActiveModel = AccessMeta::find_by_id(old_parent)
             .one(&txn)
             .await
@@ -2086,6 +2095,7 @@ impl MetaStore for DatabaseMetaStore {
             .ok_or(MetaError::ParentNotFound(old_parent))?
             .into();
         old_parent_meta.modify_time = Set(now);
+        old_parent_meta.create_time = Set(now);
         old_parent_meta
             .update(&txn)
             .await
@@ -2099,6 +2109,7 @@ impl MetaStore for DatabaseMetaStore {
                 .ok_or(MetaError::NotFound(new_parent))?
                 .into();
             new_parent_meta.modify_time = Set(now);
+            new_parent_meta.create_time = Set(now);
             new_parent_meta
                 .update(&txn)
                 .await

@@ -1316,6 +1316,7 @@ impl<T: MetaStore + ?Sized + 'static> MetaLayer for MetaClient<T> {
         }
         self.inode_cache.add_child(parent, name, ino).await;
 
+        self.inode_cache.invalidate_inode(parent).await;
         self.invalidate_parent_path(parent).await;
 
         Ok(ino)
@@ -1332,6 +1333,7 @@ impl<T: MetaStore + ?Sized + 'static> MetaLayer for MetaClient<T> {
         debug!("MetaClient: rmdir completed, updating cache");
 
         self.inode_cache.remove_child(parent, name).await;
+        self.inode_cache.invalidate_inode(parent).await;
         self.invalidate_parent_path(parent).await;
 
         Ok(())
@@ -1364,6 +1366,7 @@ impl<T: MetaStore + ?Sized + 'static> MetaLayer for MetaClient<T> {
         }
         self.inode_cache.add_child(parent, name, ino).await;
 
+        self.inode_cache.invalidate_inode(parent).await;
         self.invalidate_parent_path(parent).await;
 
         Ok(ino)
@@ -1395,6 +1398,7 @@ impl<T: MetaStore + ?Sized + 'static> MetaLayer for MetaClient<T> {
             .add_child(parent, name.to_string(), inode)
             .await;
 
+        self.inode_cache.invalidate_inode(parent).await;
         self.invalidate_parent_path(parent).await;
 
         Ok(attr)
@@ -1436,6 +1440,7 @@ impl<T: MetaStore + ?Sized + 'static> MetaLayer for MetaClient<T> {
             .add_child(parent, name.to_string(), ino)
             .await;
 
+        self.inode_cache.invalidate_inode(parent).await;
         self.invalidate_parent_path(parent).await;
 
         Ok((ino, attr))
